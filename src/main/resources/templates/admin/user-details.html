@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>User Details</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            ⚙️ Admin Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}" class="active">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>User Details</div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div class="card">
+                <div class="card-header">
+                    <h3>User Information: <span style="font-weight: normal;" th:text="${userObj.username}"></span></h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID:</strong> <span th:text="${userObj.id}"></span></p>
+                    <p><strong>Role:</strong> <span class="badge badge-info" th:text="${userObj.role}"></span></p>
+                    <p><strong>Status:</strong> 
+                        <span th:class="${userObj.enabled} ? 'badge badge-success' : 'badge badge-danger'" 
+                              th:text="${userObj.enabled} ? 'Active' : 'Disabled'"></span>
+                    </p>
+                    <p><strong>Created At:</strong> <span th:text="${userObj.createdAt}"></span></p>
+
+                    <div th:if="${userObj.role.name() == 'STUDENT' and userObj.studentProfile != null}">
+                        <h4 style="margin-top: 2rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">Student Profile</h4>
+                        <p><strong>Student ID:</strong> <span th:text="${userObj.studentProfile.studentId}"></span></p>
+                        <p><strong>Full Name:</strong> <span th:text="${userObj.studentProfile.fullName}"></span></p>
+                        <p><strong>Department:</strong> <span th:text="${userObj.studentProfile.department}"></span></p>
+                        <p><strong>Email:</strong> <span th:text="${userObj.studentProfile.email}"></span></p>
+                    </div>
+                    
+                    <div th:if="${userObj.role.name() == 'STUDENT' and userObj.studentProfile == null}">
+                        <div class="alert alert-warning" style="margin-top: 1.5rem;">No student profile associated with this user.</div>
+                    </div>
+                    
+                    <div style="margin-top: 2rem;">
+                        <a th:href="@{/admin/users}" class="btn btn-secondary">← Back to Users</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</html>

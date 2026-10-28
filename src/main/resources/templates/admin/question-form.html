@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Question Form</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            ⚙️ Admin Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}" class="active">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>Edit Question</div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 th:text="${questionDto.id != null} ? 'Edit Question' : 'New Question'">Question Form</h3>
+                </div>
+                <div class="card-body">
+                    <form th:action="${questionDto.id != null} ? @{/admin/questions/{id}/edit(id=${questionDto.id})} : @{/admin/questions/new}"
+                          method="post" th:object="${questionDto}">
+                        <div class="form-group">
+                            <label>Question Text</label>
+                            <textarea th:field="*{questionText}" class="form-control" rows="4" required></textarea>
+                            <span th:if="${#fields.hasErrors('questionText')}" th:errors="*{questionText}" class="text-danger"></span>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Option A</label>
+                                <input type="text" th:field="*{optionA}" class="form-control" required/>
+                                <span th:if="${#fields.hasErrors('optionA')}" th:errors="*{optionA}" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label>Option B</label>
+                                <input type="text" th:field="*{optionB}" class="form-control" required/>
+                                <span th:if="${#fields.hasErrors('optionB')}" th:errors="*{optionB}" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label>Option C</label>
+                                <input type="text" th:field="*{optionC}" class="form-control" required/>
+                            </div>
+                            <div class="form-group">
+                                <label>Option D</label>
+                                <input type="text" th:field="*{optionD}" class="form-control" required/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Correct Answer</label>
+                                <select th:field="*{correctAnswer}" class="form-control">
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Positive Marks</label>
+                                <input type="number" step="0.5" min="0.5" th:field="*{positiveMarks}" class="form-control" required/>
+                            </div>
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <select th:field="*{subjectId}" class="form-control">
+                                    <option th:each="s : ${subjects}" th:value="${s.id}" th:text="${s.name}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Question</button>
+                        <a th:href="@{/admin/questions}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

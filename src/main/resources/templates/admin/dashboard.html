@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Admin Dashboard – Online Exam System</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">⚙️ Admin Portal</div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}" class="active">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>Welcome, <strong>Admin</strong></div>
+            <form th:action="@{/logout}" method="post" style="margin:0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <h1>Admin Dashboard</h1>
+
+            <!-- Stat Cards -->
+            <div class="stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem;">
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${totalStudents}" style="font-size:2rem;color:var(--primary);margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Students</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${totalExams}" style="font-size:2rem;color:var(--primary);margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Total Exams</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${availableExams}" style="font-size:2rem;color:#22c55e;margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Available Now</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${upcomingExams}" style="font-size:2rem;color:#f59e0b;margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Upcoming</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${expiredExams}" style="font-size:2rem;color:#ef4444;margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Expired</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${closedExams}" style="font-size:2rem;color:#6b7280;margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Closed / Unpublished</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <a th:href="@{/admin/results}" style="text-decoration:none;">
+                        <h3 th:text="${totalAttempts}" style="font-size:2rem;color:var(--primary);margin-bottom:0.25rem;">0</h3>
+                        <p style="color:var(--primary);font-weight:600;margin:0;">Student Results →</p>
+                    </a>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${totalSubjects}" style="font-size:2rem;color:var(--primary);margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Subjects</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card" style="margin-bottom:2rem;">
+                <div class="card-header"><h3>Quick Actions</h3></div>
+                <div style="padding:1.25rem;display:flex;gap:1rem;flex-wrap:wrap;">
+                    <a th:href="@{/admin/users}" class="btn btn-primary">Manage Users</a>
+                    <a th:href="@{/admin/questions/new}" class="btn btn-primary">Add Question</a>
+                    <a th:href="@{/admin/exams/new}" class="btn btn-primary">Create Exam</a>
+                    <a th:href="@{/admin/results}" class="btn btn-primary" style="background:#059669; border-color:#059669;">📊 Student Results</a>
+                </div>
+            </div>
+
+            <!-- Exam Summary Table -->
+            <div class="card">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                    <h3 style="margin:0;">Exam Overview</h3>
+                    <a th:href="@{/admin/exams/new}" class="btn btn-primary btn-sm">+ New Exam</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="dashExamTable">
+                        <thead>
+                        <tr>
+                            <th>Title</th><th>Subject</th><th>Duration</th>
+                            <th>Opens</th><th>Closes</th><th>Mode</th>
+                            <th>Published</th><th>Status</th><th>Attempts</th><th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="e, idx : ${exams}">
+                            <td th:text="${e.title}"></td>
+                            <td><span class="badge badge-info" th:text="${e.subject.name}"></span></td>
+                            <td th:text="${e.durationMinutes} + ' min'"></td>
+                            <td th:text="${e.validFrom != null ? #temporals.format(e.validFrom,'dd MMM yyyy HH:mm') : '—'}"></td>
+                            <td th:text="${e.validUntil != null ? #temporals.format(e.validUntil,'dd MMM yyyy HH:mm') : (e.availabilityMode.name() == 'NO_EXPIRY' ? 'No Expiry' : '—')}"></td>
+                            <td>
+                                <span th:text="${e.availabilityMode.name() == 'SCHEDULED_PERIOD' ? 'Scheduled' : 'No Expiry'}"
+                                      th:class="${e.availabilityMode.name() == 'SCHEDULED_PERIOD' ? 'badge badge-info' : 'badge badge-secondary'}"></span>
+                            </td>
+                            <td>
+                                <span th:class="${e.active ? 'badge badge-success' : 'badge badge-danger'}"
+                                      th:text="${e.active ? 'Yes' : 'No'}"></span>
+                            </td>
+                            <td>
+                                <span th:with="st=${examStatuses[idx.index]}"
+                                      th:switch="${st.name()}">
+                                    <span th:case="'AVAILABLE'"   class="badge badge-success">Available</span>
+                                    <span th:case="'UPCOMING'"    class="badge" style="background:#f59e0b;color:#fff;">Upcoming</span>
+                                    <span th:case="'EXPIRED'"     class="badge badge-danger">Expired</span>
+                                    <span th:case="'CLOSED'"      class="badge badge-danger">Closed</span>
+                                    <span th:case="'UNPUBLISHED'" class="badge badge-secondary">Unpublished</span>
+                                    <span th:case="*"             class="badge badge-secondary" th:text="${st}"></span>
+                                </span>
+                            </td>
+                            <td th:text="${examAttemptCounts[idx.index]}"></td>
+                            <td>
+                                <a th:href="@{/admin/exams/{id}/edit(id=${e.id})}" class="btn btn-sm btn-warning">Edit</a>
+                                <a th:href="@{/admin/exams/{id}/results(id=${e.id})}" class="btn btn-sm btn-info">Results</a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#dashExamTable').DataTable({ "order": [ [7, "asc"] ] });
+    });
+</script>
+</body>
+</html>

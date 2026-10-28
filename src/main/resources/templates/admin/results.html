@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Student Exam Results – Online Exam System</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+    <style>
+        .filter-panel {
+            background: #ffffff;
+            border-radius: var(--radius-lg, 0.75rem);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+            border: 1px solid var(--gray-200, #e2e8f0);
+        }
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .filter-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--dark, #0f172a);
+        }
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--gray-300, #cbd5e1);
+            border-radius: var(--radius-md, 0.5rem);
+            font-size: 0.9rem;
+            background-color: #fff;
+            color: var(--text-main, #1e293b);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary, #4f46e5);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .empty-results-box {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background: #ffffff;
+            border-radius: var(--radius-lg, 0.75rem);
+            border: 1px dashed var(--gray-300, #cbd5e1);
+            margin-top: 1rem;
+        }
+        .empty-results-box h4 {
+            font-size: 1.2rem;
+            color: var(--dark, #0f172a);
+            margin-bottom: 0.5rem;
+        }
+        .empty-results-box p {
+            color: var(--text-muted, #64748b);
+            margin-bottom: 1rem;
+        }
+        .badge-pass {
+            background-color: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+            font-weight: 700;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+        .badge-fail {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            font-weight: 700;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+        .table th {
+            white-space: nowrap;
+            background: #f8fafc;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .table td {
+            vertical-align: middle;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            ⚙️ Admin Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}" class="active">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div><strong>Student Exam Results Management</strong></div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="margin-bottom: 0.25rem;">Student Exam Results</h1>
+                    <p style="margin: 0;">View, search, and analyze all submitted student examination attempts and performance records.</p>
+                </div>
+            </div>
+
+            <!-- Search and Filter Form -->
+            <div class="filter-panel">
+                <form th:action="@{/admin/results}" method="get" id="resultsFilterForm">
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label for="studentName">Student Name</label>
+                            <input type="text" id="studentName" name="studentName"
+                                   th:value="${filterStudentName}" placeholder="e.g. Upendra, Sai..." />
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="studentId">Student ID</label>
+                            <input type="text" id="studentId" name="studentId"
+                                   th:value="${filterStudentId}" placeholder="e.g. STU123..." />
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="email">Student Email</label>
+                            <input type="text" id="email" name="email"
+                                   th:value="${filterEmail}" placeholder="e.g. student@gmail.com..." />
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="examId">Exam</label>
+                            <select id="examId" name="examId">
+                                <option value="">-- All Exams --</option>
+                                <option th:each="ex : ${exams}"
+                                        th:value="${ex.id}"
+                                        th:text="${ex.title}"
+                                        th:selected="${filterExamId != null and filterExamId == ex.id}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="subjectId">Subject</label>
+                            <select id="subjectId" name="subjectId">
+                                <option value="">-- All Subjects --</option>
+                                <option th:each="sb : ${subjects}"
+                                        th:value="${sb.id}"
+                                        th:text="${sb.name}"
+                                        th:selected="${filterSubjectId != null and filterSubjectId == sb.id}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="status">Result Status</label>
+                            <select id="status" name="status">
+                                <option value="ALL" th:selected="${filterStatus == 'ALL' or filterStatus == null}">-- All (PASS & FAIL) --</option>
+                                <option value="PASS" th:selected="${filterStatus == 'PASS'}">PASS</option>
+                                <option value="FAIL" th:selected="${filterStatus == 'FAIL'}">FAIL</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="sortBy">Sort By</label>
+                            <select id="sortBy" name="sortBy">
+                                <option value="date_desc" th:selected="${filterSortBy == 'date_desc'}">Submission Date: Newest First</option>
+                                <option value="date_asc" th:selected="${filterSortBy == 'date_asc'}">Submission Date: Oldest First</option>
+                                <option value="score_desc" th:selected="${filterSortBy == 'score_desc'}">Score: Highest First</option>
+                                <option value="score_asc" th:selected="${filterSortBy == 'score_asc'}">Score: Lowest First</option>
+                                <option value="percentage_desc" th:selected="${filterSortBy == 'percentage_desc'}">Percentage: Highest First</option>
+                                <option value="percentage_asc" th:selected="${filterSortBy == 'percentage_asc'}">Percentage: Lowest First</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button type="submit" class="btn btn-primary" style="height: 40px; padding: 0 1.25rem;">
+                                🔍 Apply Filters
+                            </button>
+                            <a th:href="@{/admin/results}" class="btn btn-secondary" style="height: 40px; padding: 0 1rem; display: inline-flex; align-items: center;">
+                                🔄 Clear Filters
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Empty Results Handling -->
+            <div th:if="${#lists.isEmpty(results)}">
+                <div class="empty-results-box" th:if="${totalCompleted == 0}">
+                    <h4>No exam results are available yet.</h4>
+                    <p>Students have not completed or submitted any exams yet. Once an exam is submitted, the result will automatically appear here.</p>
+                </div>
+                <div class="empty-results-box" th:if="${totalCompleted > 0}">
+                    <h4>No results found matching your criteria.</h4>
+                    <p>Try modifying or resetting your search and filter parameters.</p>
+                    <a th:href="@{/admin/results}" class="btn btn-primary btn-sm">Clear Filters</a>
+                </div>
+            </div>
+
+            <!-- Results Table (16 Columns) -->
+            <div class="card" th:if="${not #lists.isEmpty(results)}">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">
+                        Submitted Results (<span th:text="${#lists.size(results)}">0</span>)
+                    </h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="resultsDataTable" style="width:100%">
+                        <thead>
+                        <tr>
+                            <th>Result ID</th>
+                            <th>Student Name</th>
+                            <th>Student ID</th>
+                            <th>Student Email</th>
+                            <th>Exam Name</th>
+                            <th>Subject</th>
+                            <th>Submission Date & Time</th>
+                            <th>Total Qs</th>
+                            <th>Attempted</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Total Marks</th>
+                            <th>Marks Obtained</th>
+                            <th>Percentage</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="r : ${results}">
+                            <td><strong th:text="'#' + ${r.resultId}"></strong></td>
+                            <td><strong th:text="${r.studentName}"></strong></td>
+                            <td th:text="${r.studentId}"></td>
+                            <td th:text="${r.studentEmail}"></td>
+                            <td th:text="${r.examTitle}"></td>
+                            <td><span class="badge badge-info" th:text="${r.subjectName}"></span></td>
+                            <td th:text="${r.submittedAt != null ? #temporals.format(r.submittedAt, 'yyyy-MM-dd HH:mm:ss') : '—'}"></td>
+                            <td style="text-align:center;" th:text="${r.totalQuestions}"></td>
+                            <td style="text-align:center;" th:text="${r.attemptedQuestions}"></td>
+                            <td style="text-align:center; color:#047857; font-weight:600;" th:text="${r.correctAnswers}"></td>
+                            <td style="text-align:center; color:#b91c1c; font-weight:600;" th:text="${r.wrongAnswers}"></td>
+                            <td style="text-align:center;" th:text="${r.totalMarks}"></td>
+                            <td style="text-align:center;">
+                                <strong th:text="${r.marksObtained}"></strong>
+                            </td>
+                            <td style="text-align:center;">
+                                <span th:text="${r.percentage} + '%'"></span>
+                            </td>
+                            <td>
+                                <span th:if="${r.passed}" class="badge-pass">PASS</span>
+                                <span th:unless="${r.passed}" class="badge-fail">FAIL</span>
+                            </td>
+                            <td>
+                                <a th:href="@{/admin/results/{id}(id=${r.resultId})}" class="btn btn-sm btn-info" style="white-space: nowrap;">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <a th:href="@{/admin/dashboard}" class="btn btn-secondary">← Back to Dashboard</a>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        if ($('#resultsDataTable').length) {
+            $('#resultsDataTable').DataTable({
+                "pageLength": 25,
+                "ordering": false // Keep server-side sorted order
+            });
+        }
+    });
+</script>
+</body>
+</html>

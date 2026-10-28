@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Student Dashboard – Online Exam System</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">🎓 Student Portal</div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/student/dashboard}" class="active">Dashboard</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="topbar">
+            <div>Welcome back, <strong th:text="${student.studentProfile != null ? student.studentProfile.fullName : student.username}"></strong></div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <!-- Profile Card -->
+            <div th:if="${profile != null}" class="card" style="margin-bottom:1.5rem;">
+                <div class="card-header"><h3>My Profile</h3></div>
+                <div style="padding:1.25rem; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem;">
+                    <div><span class="text-muted">Student ID</span><br/><strong th:text="${profile.studentId}"></strong></div>
+                    <div><span class="text-muted">Full Name</span><br/><strong th:text="${profile.fullName}"></strong></div>
+                    <div><span class="text-muted">Department</span><br/><strong th:text="${profile.department}"></strong></div>
+                    <div><span class="text-muted">Email</span><br/><strong th:text="${profile.email}"></strong></div>
+                </div>
+            </div>
+
+            <!-- Summary Counts -->
+            <div class="stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem;">
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${submittedCount}" style="font-size:2rem;color:var(--primary);margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Submitted</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${availableCount}" style="font-size:2rem;color:#22c55e;margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Available</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${upcomingCount}" style="font-size:2rem;color:#f59e0b;margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Upcoming</p>
+                </div>
+                <div class="card" style="text-align:center;padding:1.5rem 1rem;">
+                    <h3 th:text="${expiredCount}" style="font-size:2rem;color:#ef4444;margin-bottom:0.25rem;">0</h3>
+                    <p style="color:var(--text-muted);margin:0;">Expired</p>
+                </div>
+            </div>
+
+            <!-- All Exams Table -->
+            <div class="card">
+                <div class="card-header"><h2>Exam Overview</h2></div>
+                <div class="table-responsive">
+                    <table class="table" id="examTable">
+                        <thead>
+                        <tr>
+                            <th>Exam</th><th>Subject</th><th>Duration</th><th>Marks</th>
+                            <th>Opens</th><th>Closes</th><th>Status</th><th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="view : ${allViews}">
+                            <td th:text="${view.exam.title}"></td>
+                            <td><span class="badge badge-info" th:text="${view.exam.subject.name}"></span></td>
+                            <td th:text="${view.exam.durationMinutes} + ' min'"></td>
+                            <td th:text="${view.exam.totalMarks}"></td>
+                            <td th:text="${view.exam.validFrom != null ? #temporals.format(view.exam.validFrom,'dd MMM yyyy HH:mm') : '—'}"></td>
+                            <td th:text="${view.exam.validUntil != null ? #temporals.format(view.exam.validUntil,'dd MMM yyyy HH:mm') : (view.exam.availabilityMode.name() == 'NO_EXPIRY' ? 'No Expiry' : '—')}"></td>
+                            <td>
+                                <span th:switch="${view.status.name()}">
+                                    <span th:case="'AVAILABLE'" class="badge badge-success">Available</span>
+                                    <span th:case="'UPCOMING'"  class="badge" style="background:#f59e0b;color:#fff;">Upcoming</span>
+                                    <span th:case="'EXPIRED'"   class="badge badge-danger">Expired</span>
+                                    <span th:case="'CLOSED'"    class="badge badge-danger">Closed</span>
+                                    <span th:case="'UNPUBLISHED'" class="badge badge-secondary">Unpublished</span>
+                                    <span th:case="*"           class="badge badge-secondary" th:text="${view.status}"></span>
+                                </span>
+                            </td>
+                            <td>
+                                <!-- Attempted: show result link -->
+                                <a th:if="${view.isAttempted()}"
+                                   th:href="@{/student/results/{id}(id=${view.attempt.id})}"
+                                   class="btn btn-sm btn-info">View Result</a>
+                                <!-- In-progress: resume -->
+                                <a th:if="${view.isInProgress() and view.status.name() == 'AVAILABLE'}"
+                                   th:href="@{/student/exams/{id}/start(id=${view.exam.id})}"
+                                   class="btn btn-sm btn-warning">Resume</a>
+                                <!-- Available: start -->
+                                <a th:if="${!view.isAttempted() and !view.isInProgress() and view.status.name() == 'AVAILABLE'}"
+                                   th:href="@{/student/exams/{id}/start(id=${view.exam.id})}"
+                                   class="btn btn-sm btn-primary">Start Exam</a>
+                                <!-- Otherwise: disabled -->
+                                <span th:if="${!view.isAttempted() and !view.isInProgress() and view.status.name() != 'AVAILABLE'}"
+                                      class="text-muted" style="font-size:0.85rem;" th:text="${view.status.name()}">—</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#examTable').DataTable({
+            "language": { "emptyTable": "No exams published yet." },
+            "order": [ [6, "asc"] ]
+        });
+    });
+</script>
+</body>
+</html>

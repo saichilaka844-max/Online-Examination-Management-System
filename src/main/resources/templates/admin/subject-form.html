@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Edit Subject</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            ⚙️ Admin Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}" class="active">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>Edit Subject</div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Edit Subject: <span th:text="${subject.name}"></span></h3>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/subjects/{id}/edit(id=${subject.id})}" method="post">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" name="name" th:value="${subject.name}" class="form-control" required/>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea name="description" class="form-control" rows="3" th:text="${subject.description}"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Subject</button>
+                        <a th:href="@{/admin/subjects}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Questions</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            ⚙️ Admin Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}" class="active">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>Manage Questions</div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">All Questions</h3>
+                    <a th:href="@{/admin/questions/new}" class="btn btn-primary">Add New Question</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead><tr><th>ID</th><th>Question</th><th>Subject</th><th>Marks</th><th>Actions</th></tr></thead>
+                        <tbody>
+                        <tr th:each="q : ${questions}">
+                            <td th:text="${q.id}"></td>
+                            <td th:text="${#strings.abbreviate(q.questionText, 80)}"></td>
+                            <td><span class="badge badge-info" th:text="${q.subject.name}"></span></td>
+                            <td th:text="${q.positiveMarks}"></td>
+                            <td>
+                                <a th:href="@{/admin/questions/{id}/edit(id=${q.id})}" class="btn btn-sm btn-warning">Edit</a>
+                                <form th:action="@{/admin/questions/{id}/delete(id=${q.id})}" method="post" style="display:inline"
+                                      onsubmit="return confirm('Delete this question?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.table').DataTable();
+    });
+</script>
+</body>
+</html>

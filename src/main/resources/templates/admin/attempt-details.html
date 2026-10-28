@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Student Exam Result Details – Online Exam System</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <style>
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .detail-item {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--radius-md, 0.5rem);
+            border: 1px solid var(--gray-200, #e2e8f0);
+        }
+        .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted, #64748b);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .detail-value {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--dark, #0f172a);
+        }
+        .metrics-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .metric-card {
+            background: #fff;
+            padding: 1.25rem 1rem;
+            border-radius: var(--radius-md, 0.5rem);
+            text-align: center;
+            border: 1px solid var(--gray-200, #e2e8f0);
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+        }
+        .metric-num {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .metric-title {
+            font-size: 0.8rem;
+            color: var(--text-muted, #64748b);
+            font-weight: 500;
+        }
+        .question-card {
+            background: #ffffff;
+            border: 1px solid var(--gray-200, #e2e8f0);
+            border-radius: var(--radius-md, 0.5rem);
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            transition: box-shadow 0.2s;
+        }
+        .question-card.is-correct {
+            border-left: 5px solid #10b981;
+        }
+        .question-card.is-wrong {
+            border-left: 5px solid #ef4444;
+        }
+        .option-pill {
+            padding: 0.6rem 0.85rem;
+            margin-bottom: 0.5rem;
+            border-radius: var(--radius-md, 0.5rem);
+            background: #f8fafc;
+            border: 1px solid var(--gray-200, #e2e8f0);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .option-pill.correct-option {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            color: #065f46;
+            font-weight: 600;
+        }
+        .option-pill.student-selected-wrong {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+            font-weight: 600;
+        }
+        .badge-pass {
+            background-color: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+            font-weight: 700;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+        .badge-fail {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            font-weight: 700;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            ⚙️ Admin Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}" class="active">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <strong>Result Details:</strong>
+                <span th:text="${result.studentName}"></span> —
+                <span th:text="${result.examTitle}"></span>
+            </div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="margin-bottom: 0.25rem;">Examination Result Details</h1>
+                    <p style="margin: 0;">Comprehensive submission review and question-by-question marks breakdown.</p>
+                </div>
+                <div>
+                    <a th:href="@{/admin/results}" class="btn btn-secondary">← Back to Student Results</a>
+                </div>
+            </div>
+
+            <!-- Student & Exam Details Card -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3 style="margin:0;">Candidate & Examination Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Student Full Name</div>
+                            <div class="detail-value" th:text="${result.studentName}">Student Name</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Student ID</div>
+                            <div class="detail-value" th:text="${result.studentId}">STU-001</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Student Email</div>
+                            <div class="detail-value" th:text="${result.studentEmail}">student@email.com</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Exam Title</div>
+                            <div class="detail-value" th:text="${result.examTitle}">Exam Title</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Subject</div>
+                            <div class="detail-value">
+                                <span class="badge badge-info" th:text="${result.subjectName}">Subject</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Submission Date & Time</div>
+                            <div class="detail-value" th:text="${result.submittedAt != null ? #temporals.format(result.submittedAt, 'yyyy-MM-dd HH:mm:ss') : 'In Progress'}">2026-10-14 12:00:00</div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Scorecards -->
+                    <div class="metrics-bar">
+                        <div class="metric-card">
+                            <div class="metric-num" style="color: var(--primary);" th:text="${result.marksObtained} + ' / ' + ${result.totalMarks}">0 / 0</div>
+                            <div class="metric-title">Marks Obtained</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-num" th:text="${result.percentage} + '%'">0%</div>
+                            <div class="metric-title">Percentage</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-num">
+                                <span th:if="${result.passed}" class="badge-pass">PASS</span>
+                                <span th:unless="${result.passed}" class="badge-fail">FAIL</span>
+                            </div>
+                            <div class="metric-title">Status</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-num" th:text="${result.totalQuestions}">0</div>
+                            <div class="metric-title">Total Questions</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-num" th:text="${result.attemptedQuestions}">0</div>
+                            <div class="metric-title">Attempted</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-num" style="color: #10b981;" th:text="${result.correctAnswers}">0</div>
+                            <div class="metric-title">Correct</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-num" style="color: #ef4444;" th:text="${result.wrongAnswers}">0</div>
+                            <div class="metric-title">Wrong</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions and Answers Breakdown -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 style="margin:0;">Detailed Questions & Answers Assessment</h3>
+                </div>
+                <div class="card-body">
+                    <div th:if="${#lists.isEmpty(answers)}" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        No individual question records available for this attempt.
+                    </div>
+
+                    <div th:each="ans, stat : ${answers}"
+                         class="question-card"
+                         th:classappend="${ans.correct != null and ans.correct} ? 'is-correct' : 'is-wrong'">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <span style="font-weight: 700; color: var(--dark);">
+                                Question <span th:text="${stat.count}">1</span>
+                            </span>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <span th:if="${ans.correct != null and ans.correct}" class="badge badge-success">✓ Correct</span>
+                                <span th:if="${ans.correct != null and !ans.correct and ans.selectedAnswer != null and !ans.selectedAnswer.isEmpty()}" class="badge badge-danger">✗ Incorrect</span>
+                                <span th:if="${ans.selectedAnswer == null or ans.selectedAnswer.isEmpty()}" class="badge badge-secondary">Not Attempted</span>
+
+                                <span class="badge badge-info" th:text="'Marks: ' + ${ans.marksAwarded} + ' / ' + ${ans.question.positiveMarks}"></span>
+                            </div>
+                        </div>
+
+                        <p style="font-size: 1.05rem; font-weight: 500; color: var(--dark); margin-bottom: 1rem;"
+                           th:text="${ans.question.questionText}">Question text goes here</p>
+
+                        <!-- Options -->
+                        <div style="margin-bottom: 1rem;">
+                            <div class="option-pill"
+                                 th:classappend="${ans.question.correctAnswer == 'A'} ? 'correct-option' : (${ans.selectedAnswer == 'A' and !ans.correct} ? 'student-selected-wrong' : '')">
+                                <strong>A)</strong>
+                                <span th:text="${ans.question.optionA}">Option A</span>
+                                <span th:if="${ans.question.correctAnswer == 'A'}" style="margin-left: auto; font-size: 0.8rem;">(Correct Key)</span>
+                                <span th:if="${ans.selectedAnswer == 'A' and ans.question.correctAnswer != 'A'}" style="margin-left: auto; font-size: 0.8rem;">(Student Selected)</span>
+                            </div>
+
+                            <div class="option-pill"
+                                 th:classappend="${ans.question.correctAnswer == 'B'} ? 'correct-option' : (${ans.selectedAnswer == 'B' and !ans.correct} ? 'student-selected-wrong' : '')">
+                                <strong>B)</strong>
+                                <span th:text="${ans.question.optionB}">Option B</span>
+                                <span th:if="${ans.question.correctAnswer == 'B'}" style="margin-left: auto; font-size: 0.8rem;">(Correct Key)</span>
+                                <span th:if="${ans.selectedAnswer == 'B' and ans.question.correctAnswer != 'B'}" style="margin-left: auto; font-size: 0.8rem;">(Student Selected)</span>
+                            </div>
+
+                            <div class="option-pill"
+                                 th:classappend="${ans.question.correctAnswer == 'C'} ? 'correct-option' : (${ans.selectedAnswer == 'C' and !ans.correct} ? 'student-selected-wrong' : '')">
+                                <strong>C)</strong>
+                                <span th:text="${ans.question.optionC}">Option C</span>
+                                <span th:if="${ans.question.correctAnswer == 'C'}" style="margin-left: auto; font-size: 0.8rem;">(Correct Key)</span>
+                                <span th:if="${ans.selectedAnswer == 'C' and ans.question.correctAnswer != 'C'}" style="margin-left: auto; font-size: 0.8rem;">(Student Selected)</span>
+                            </div>
+
+                            <div class="option-pill"
+                                 th:classappend="${ans.question.correctAnswer == 'D'} ? 'correct-option' : (${ans.selectedAnswer == 'D' and !ans.correct} ? 'student-selected-wrong' : '')">
+                                <strong>D)</strong>
+                                <span th:text="${ans.question.optionD}">Option D</span>
+                                <span th:if="${ans.question.correctAnswer == 'D'}" style="margin-left: auto; font-size: 0.8rem;">(Correct Key)</span>
+                                <span th:if="${ans.selectedAnswer == 'D' and ans.question.correctAnswer != 'D'}" style="margin-left: auto; font-size: 0.8rem;">(Student Selected)</span>
+                            </div>
+                        </div>
+
+                        <!-- Summary of student answer vs correct answer -->
+                        <div style="background: #f1f5f9; padding: 0.75rem 1rem; border-radius: var(--radius-md, 0.5rem); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; font-size: 0.9rem;">
+                            <div>
+                                <strong>Student's Submitted Answer:</strong>
+                                <span th:if="${ans.selectedAnswer != null and !ans.selectedAnswer.isEmpty()}"
+                                      th:text="${ans.selectedAnswer}"
+                                      th:style="${ans.correct} ? 'color: #047857; font-weight: 700;' : 'color: #b91c1c; font-weight: 700;'"></span>
+                                <span th:if="${ans.selectedAnswer == null or ans.selectedAnswer.isEmpty()}"
+                                      style="color: #64748b; font-style: italic;">None (Skipped)</span>
+                            </div>
+                            <div>
+                                <strong>Official Correct Answer:</strong>
+                                <span th:text="${ans.question.correctAnswer}" style="color: #047857; font-weight: 700;"></span>
+                            </div>
+                            <div>
+                                <strong>Marks Awarded:</strong>
+                                <strong th:text="${ans.marksAwarded} + ' / ' + ${ans.question.positiveMarks}"></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                        <a th:href="@{/admin/results}" class="btn btn-primary">← Back to Student Results</a>
+                        <a th:href="@{/admin/exams}" class="btn btn-secondary">Exams List</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/>
+    <title th:text="${examDto.id != null} ? 'Edit Exam' : 'Create Exam'">Exam Form</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">⚙️ Admin Portal</div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}" class="active">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div th:text="${examDto.id != null} ? 'Edit Exam' : 'Create Exam'">Exam Form</div>
+            <form th:action="@{/logout}" method="post" style="margin:0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 th:text="${examDto.id != null} ? 'Edit Exam' : 'Create New Exam'">Exam Form</h3>
+                </div>
+                <div class="card-body">
+                    <form th:action="${examDto.id != null} ? @{/admin/exams/{id}/edit(id=${examDto.id})} : @{/admin/exams/new}"
+                          method="post" th:object="${examDto}">
+
+                        <!-- Title -->
+                        <div class="form-group">
+                            <label>Title *</label>
+                            <input type="text" th:field="*{title}" class="form-control" required/>
+                            <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-row">
+                            <!-- Subject -->
+                            <div class="form-group">
+                                <label>Subject *</label>
+                                <select th:field="*{subjectId}" class="form-control" required>
+                                    <option value="" disabled>-- Select Subject --</option>
+                                    <option th:each="s : ${subjects}" th:value="${s.id}" th:text="${s.name}"></option>
+                                </select>
+                                <span th:if="${#fields.hasErrors('subjectId')}" th:errors="*{subjectId}" class="text-danger"></span>
+                            </div>
+
+                            <!-- Duration -->
+                            <div class="form-group">
+                                <label>Duration (minutes) *</label>
+                                <input type="number" min="1" th:field="*{durationMinutes}" class="form-control" required/>
+                                <span th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}" class="text-danger"></span>
+                            </div>
+
+                            <!-- Passing Percentage -->
+                            <div class="form-group">
+                                <label>Passing Percentage (%) *</label>
+                                <input type="number" step="0.1" min="0" max="100" th:field="*{passingPercentage}" class="form-control" required/>
+                                <span th:if="${#fields.hasErrors('passingPercentage')}" th:errors="*{passingPercentage}" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Publish checkbox -->
+                        <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:0.5rem;font-weight:normal;margin-bottom:1rem;">
+                                <input type="checkbox" th:field="*{active}" style="width:auto;"/>
+                                Published (visible to students)
+                            </label>
+                        </div>
+
+                        <!-- ============================================================
+                             Availability Mode
+                             ============================================================ -->
+                        <div class="card" style="margin-bottom:1.5rem;border:1px solid var(--border-color);padding:1.25rem;">
+                            <h4 style="margin-top:0;">Availability Schedule</h4>
+
+                            <div class="form-group">
+                                <label>Availability Mode *</label>
+                                <div style="display:flex;gap:1.5rem;">
+                                    <label style="font-weight:normal;display:flex;align-items:center;gap:0.4rem;">
+                                        <input type="radio" name="availabilityMode" value="NO_EXPIRY"
+                                               th:checked="${examDto.availabilityMode == null or examDto.availabilityMode.name() == 'NO_EXPIRY'}"
+                                               onchange="toggleScheduleFields(this.value)"/>
+                                        No Expiry – open indefinitely after opening date
+                                    </label>
+                                    <label style="font-weight:normal;display:flex;align-items:center;gap:0.4rem;">
+                                        <input type="radio" name="availabilityMode" value="SCHEDULED_PERIOD"
+                                               th:checked="${examDto.availabilityMode != null and examDto.availabilityMode.name() == 'SCHEDULED_PERIOD'}"
+                                               onchange="toggleScheduleFields(this.value)"/>
+                                        Scheduled Period – open between two specific dates
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <!-- Valid From (both modes) -->
+                                <div class="form-group">
+                                    <label>Opens At (Valid From)</label>
+                                    <input type="datetime-local" th:field="*{validFrom}" class="form-control" id="validFromInput"/>
+                                    <small class="text-muted">Leave empty to open immediately when published</small>
+                                </div>
+
+                                <!-- Valid Until (SCHEDULED only) -->
+                                <div class="form-group" id="validUntilGroup"
+                                     th:style="${examDto.availabilityMode != null and examDto.availabilityMode.name() == 'SCHEDULED_PERIOD'} ? 'display:block' : 'display:none'">
+                                    <label>Closes At (Valid Until) *</label>
+                                    <input type="datetime-local" th:field="*{validUntil}" class="form-control" id="validUntilInput"/>
+                                    <small class="text-muted">Required for Scheduled Period mode</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Questions Section -->
+                        <div class="card" style="margin-bottom:1.5rem;border:1px solid var(--border-color);padding:1.25rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                                <h4 style="margin:0;">Exam Questions</h4>
+                                <div style="font-weight:bold; background: var(--light-bg); padding: 0.5rem 1rem; border-radius: 4px;">
+                                    Total Questions: <span id="lblTotalQuestions">0</span> | 
+                                    Total Marks: <span id="lblTotalMarks">0</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Select from Question Bank</label>
+                                <div style="border:1px solid var(--border-color);border-radius:var(--border-radius);padding:1rem;max-height:200px;overflow-y:auto; margin-bottom: 1rem;">
+                                    <div th:each="q : ${questions}" style="margin-bottom:0.5rem;">
+                                        <label style="display:flex;gap:0.5rem;align-items:flex-start;font-weight:normal;cursor:pointer;">
+                                            <input type="checkbox" name="questionIds" th:value="${q.id}" class="existing-q-cb" th:data-marks="${q.positiveMarks}" style="margin-top:0.25rem;width:auto;"
+                                                   th:checked="${examDto.questionIds != null and examDto.questionIds.contains(q.id)}"
+                                                   onchange="updateTotals()"/>
+                                            <span>
+                                                <strong>[<span th:text="${q.subject.name}"></span>]</strong>
+                                                <span th:text="${#strings.abbreviate(q.questionText, 80)}"></span>
+                                                <span class="badge badge-info" style="font-size:0.75rem;"><span th:text="${q.positiveMarks}"></span> marks</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr style="border:1px solid var(--border-color); margin: 1.5rem 0;" />
+                            
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                                <h5 style="margin:0;">Add New Questions Directly</h5>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="addNewQuestion()">+ Add Question</button>
+                            </div>
+                            
+                            <div id="newQuestionsContainer">
+                                <!-- Thymeleaf rendering for existing questions that failed validation or are loaded for editing -->
+                                <div th:each="nq, stat : *{questions}" class="card new-question-card" style="margin-bottom:1rem; padding:1rem; border:1px solid #ccc; background:#f9f9f9;">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 0.5rem;">
+                                        <strong>Question <span class="nq-index" th:text="${stat.index + 1}"></span></strong>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+                                    </div>
+                                    <input type="hidden" th:field="*{questions[__${stat.index}__].id}" />
+                                    <div class="form-group">
+                                        <label>Question Text *</label>
+                                        <textarea th:field="*{questions[__${stat.index}__].questionText}" class="form-control" rows="3" required></textarea>
+                                        <span th:if="${#fields.hasErrors('questions[__${stat.index}__].questionText')}" th:errors="*{questions[__${stat.index}__].questionText}" class="text-danger"></span>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Option A *</label>
+                                            <input type="text" th:field="*{questions[__${stat.index}__].optionA}" class="form-control" required/>
+                                            <span th:if="${#fields.hasErrors('questions[__${stat.index}__].optionA')}" th:errors="*{questions[__${stat.index}__].optionA}" class="text-danger"></span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Option B *</label>
+                                            <input type="text" th:field="*{questions[__${stat.index}__].optionB}" class="form-control" required/>
+                                            <span th:if="${#fields.hasErrors('questions[__${stat.index}__].optionB')}" th:errors="*{questions[__${stat.index}__].optionB}" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Option C *</label>
+                                            <input type="text" th:field="*{questions[__${stat.index}__].optionC}" class="form-control" required/>
+                                            <span th:if="${#fields.hasErrors('questions[__${stat.index}__].optionC')}" th:errors="*{questions[__${stat.index}__].optionC}" class="text-danger"></span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Option D *</label>
+                                            <input type="text" th:field="*{questions[__${stat.index}__].optionD}" class="form-control" required/>
+                                            <span th:if="${#fields.hasErrors('questions[__${stat.index}__].optionD')}" th:errors="*{questions[__${stat.index}__].optionD}" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Correct Answer *</label>
+                                            <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+                                                <label><input type="radio" th:field="*{questions[__${stat.index}__].correctAnswer}" value="A" required/> A</label>
+                                                <label><input type="radio" th:field="*{questions[__${stat.index}__].correctAnswer}" value="B" required/> B</label>
+                                                <label><input type="radio" th:field="*{questions[__${stat.index}__].correctAnswer}" value="C" required/> C</label>
+                                                <label><input type="radio" th:field="*{questions[__${stat.index}__].correctAnswer}" value="D" required/> D</label>
+                                            </div>
+                                            <span th:if="${#fields.hasErrors('questions[__${stat.index}__].correctAnswer')}" th:errors="*{questions[__${stat.index}__].correctAnswer}" class="text-danger"></span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Marks *</label>
+                                            <input type="number" step="0.1" min="0.1" th:field="*{questions[__${stat.index}__].positiveMarks}" class="form-control nq-marks" onchange="updateTotals()" onkeyup="updateTotals()" required/>
+                                            <span th:if="${#fields.hasErrors('questions[__${stat.index}__].positiveMarks')}" th:errors="*{questions[__${stat.index}__].positiveMarks}" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:1rem;">
+                            <button type="submit" class="btn btn-primary">Save Exam</button>
+                            <a th:href="@{/admin/exams}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    function toggleScheduleFields(mode) {
+        var untilGroup = document.getElementById('validUntilGroup');
+        var untilInput = document.getElementById('validUntilInput');
+        if (mode === 'SCHEDULED_PERIOD') {
+            untilGroup.style.display = 'block';
+            untilInput.required = true;
+        } else {
+            untilGroup.style.display = 'none';
+            untilInput.required = false;
+            untilInput.value = '';
+        }
+    }
+
+    let newQuestionIndex = document.querySelectorAll('.new-question-card').length;
+
+    function addNewQuestion() {
+        const container = document.getElementById('newQuestionsContainer');
+        const idx = newQuestionIndex++;
+        const displayIdx = idx + 1;
+        
+        const html = `
+            <div class="card new-question-card" style="margin-bottom:1rem; padding:1rem; border:1px solid #ccc; background:#f9f9f9;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 0.5rem;">
+                    <strong>New Question <span class="nq-index">${displayIdx}</span></strong>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+                </div>
+                <div class="form-group">
+                    <label>Question Text *</label>
+                    <textarea name="questions[${idx}].questionText" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Option A *</label>
+                        <input type="text" name="questions[${idx}].optionA" class="form-control" required/>
+                    </div>
+                    <div class="form-group">
+                        <label>Option B *</label>
+                        <input type="text" name="questions[${idx}].optionB" class="form-control" required/>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Option C *</label>
+                        <input type="text" name="questions[${idx}].optionC" class="form-control" required/>
+                    </div>
+                    <div class="form-group">
+                        <label>Option D *</label>
+                        <input type="text" name="questions[${idx}].optionD" class="form-control" required/>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Correct Answer *</label>
+                        <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+                            <label><input type="radio" name="questions[${idx}].correctAnswer" value="A" required/> A</label>
+                            <label><input type="radio" name="questions[${idx}].correctAnswer" value="B" required/> B</label>
+                            <label><input type="radio" name="questions[${idx}].correctAnswer" value="C" required/> C</label>
+                            <label><input type="radio" name="questions[${idx}].correctAnswer" value="D" required/> D</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Marks *</label>
+                        <input type="number" step="0.1" min="0.1" name="questions[${idx}].positiveMarks" value="1.0" class="form-control nq-marks" onchange="updateTotals()" onkeyup="updateTotals()" required/>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', html);
+        updateTotals();
+    }
+    
+    function removeQuestion(btn) {
+        btn.closest('.new-question-card').remove();
+        
+        // Re-index all new questions to ensure binding works if there's a gap
+        const cards = document.querySelectorAll('.new-question-card');
+        newQuestionIndex = 0;
+        
+        cards.forEach((card) => {
+            const idx = newQuestionIndex++;
+            card.querySelector('.nq-index').innerText = idx + 1;
+            
+            const idInput = card.querySelector('input[type="hidden"][name$=".id"]');
+            if (idInput) idInput.name = `questions[${idx}].id`;
+            
+            card.querySelector('textarea[name$=".questionText"]').name = `questions[${idx}].questionText`;
+            card.querySelector('input[name$=".optionA"]').name = `questions[${idx}].optionA`;
+            card.querySelector('input[name$=".optionB"]').name = `questions[${idx}].optionB`;
+            card.querySelector('input[name$=".optionC"]').name = `questions[${idx}].optionC`;
+            card.querySelector('input[name$=".optionD"]').name = `questions[${idx}].optionD`;
+            
+            const radios = card.querySelectorAll('input[type="radio"]');
+            radios.forEach(r => r.name = `questions[${idx}].correctAnswer`);
+            
+            card.querySelector('input[name$=".positiveMarks"]').name = `questions[${idx}].positiveMarks`;
+        });
+        
+        updateTotals();
+    }
+    
+    function updateTotals() {
+        let qCount = 0;
+        let tMarks = 0.0;
+        
+        // Existing questions
+        document.querySelectorAll('.existing-q-cb:checked').forEach(cb => {
+            qCount++;
+            tMarks += parseFloat(cb.getAttribute('data-marks')) || 0;
+        });
+        
+        // New questions
+        document.querySelectorAll('.nq-marks').forEach(inp => {
+            qCount++;
+            tMarks += parseFloat(inp.value) || 0;
+        });
+        
+        document.getElementById('lblTotalQuestions').innerText = qCount;
+        document.getElementById('lblTotalMarks').innerText = tMarks.toFixed(1);
+    }
+
+    // Run on load to set initial state
+    document.addEventListener('DOMContentLoaded', function() {
+        var radios = document.querySelectorAll('input[name="availabilityMode"]');
+        radios.forEach(function(r) {
+            if (r.checked) toggleScheduleFields(r.value);
+        });
+        updateTotals();
+    });
+</script>
+</body>
+</html>

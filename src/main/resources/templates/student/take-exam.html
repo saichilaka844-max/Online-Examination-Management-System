@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${exam.title} + ' – Exam'">Take Exam</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <style>
+        .exam-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .question-panel { flex: 1; }
+        .sidebar-panel { position: sticky; top: 1rem; height: fit-content; }
+        .timer-box {
+            background: var(--primary);
+            color: #fff;
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .timer-digits { font-size: 2.5rem; font-weight: 700; letter-spacing: 2px; }
+        .timer-warning { background: #f59e0b !important; }
+        .timer-danger  { background: #ef4444 !important; }
+        .q-nav { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; }
+        .q-nav a {
+            display: block; text-align: center; padding: 6px;
+            border-radius: 4px; background: #e5e7eb; text-decoration: none;
+            font-weight: 600; color: #374151; transition: background .2s;
+        }
+        .q-nav a.answered { background: #22c55e; color: #fff; }
+        .q-nav a:hover { background: var(--primary); color: #fff; }
+        .question-card { margin-bottom: 2rem; scroll-margin-top: 80px; }
+        .option-label {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.75rem 1rem; border: 2px solid var(--border-color);
+            border-radius: 8px; cursor: pointer; transition: all .2s;
+            margin-bottom: 0.5rem;
+        }
+        .option-label:hover { border-color: var(--primary); background: #eff6ff; }
+        .option-label input { width: auto; }
+        @media (max-width: 768px) {
+            .exam-layout { grid-template-columns: 1fr; }
+            .sidebar-panel { position: static; }
+        }
+    </style>
+</head>
+<body style="background:var(--bg-secondary);min-height:100vh;">
+
+<!-- Topbar -->
+<header class="topbar" style="position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-color);">
+    <div>
+        <strong th:text="${exam.title}">Exam Title</strong>
+        <span class="badge badge-info" style="margin-left:0.5rem;" th:text="${exam.subject.name}"></span>
+    </div>
+    <div id="timerDisplay" class="timer-digits">--:--</div>
+</header>
+
+<div style="padding:1.5rem;" class="exam-layout">
+
+    <!-- Left: Questions -->
+    <div class="question-panel">
+        <form id="examForm" th:action="@{/student/exams/submit}" method="post" th:object="${submission}">
+            <input type="hidden" th:field="*{attemptId}" />
+
+
+            <div th:each="question, idx : ${examQuestions}" class="question-card card" th:id="'q' + ${idx.index + 1}">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>Question <strong th:text="${idx.index + 1}"></strong> of <strong th:text="${examQuestions.size()}"></strong></span>
+                    <span class="badge badge-info" th:text="${question.question.positiveMarks} + ' mark(s)'"></span>
+                </div>
+                <div style="padding:1.25rem;">
+                    <p style="font-size:1.1rem;font-weight:600;margin-bottom:1.25rem;" th:text="${question.question.questionText}"></p>
+
+                    <div th:each="opt : ${#strings.arraySplit('A,B,C,D', ',')}">
+                        <label class="option-label"
+                               th:for="|q${question.question.id}_${opt}|">
+                            <input type="radio"
+                                   th:id="|q${question.question.id}_${opt}|"
+                                   th:name="|answers[${question.question.id}]|"
+                                   th:value="${opt}"
+                                   onchange="markAnswered(this)"
+                                   th:data-qnum="${idx.index + 1}"/>
+                            <span>
+                                <strong th:text="${opt} + '.'"></strong>
+                                <span th:switch="${opt}">
+                                    <span th:case="'A'" th:text="${question.question.optionA}"></span>
+                                    <span th:case="'B'" th:text="${question.question.optionB}"></span>
+                                    <span th:case="'C'" th:text="${question.question.optionC}"></span>
+                                    <span th:case="'D'" th:text="${question.question.optionD}"></span>
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+                <button type="button" class="btn btn-primary" style="padding:0.75rem 2rem;font-size:1rem;"
+                        onclick="confirmSubmit()">Submit Exam</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right: Sidebar -->
+    <aside class="sidebar-panel">
+        <!-- Timer -->
+        <div id="timerBox" class="timer-box">
+            <div class="text-sm" style="opacity:0.85;margin-bottom:0.25rem;">Time Remaining</div>
+            <div id="timerBoxDisplay" class="timer-digits">--:--</div>
+        </div>
+
+        <!-- Question Navigator -->
+        <div class="card">
+            <div class="card-header"><h4 style="margin:0;">Questions</h4></div>
+            <div style="padding:1rem;">
+                <div class="q-nav" id="qNav">
+                    <a th:each="question, idx : ${examQuestions}"
+                       th:href="'#q' + (${idx.index} + 1)"
+                       th:id="'qNav' + (${idx.index} + 1)"
+                       th:text="${idx.index + 1}"></a>
+                </div>
+                <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--text-muted);">
+                    <span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:2px;"></span> Answered
+                    <span style="display:inline-block;width:12px;height:12px;background:#e5e7eb;border-radius:2px;margin-left:0.5rem;"></span> Not Answered
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem;">
+            <div style="padding:1rem;font-size:0.875rem;color:var(--text-muted);">
+                <div>Total Questions: <strong th:text="${examQuestions.size()}"></strong></div>
+                <div>Duration: <strong th:text="${exam.durationMinutes} + ' min'"></strong></div>
+                <div>Total Marks: <strong th:text="${exam.totalMarks}"></strong></div>
+                <div>Pass: <strong th:text="${exam.passingPercentage} + '%'"></strong></div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<!-- Hidden: server-provided remaining seconds (display only, NOT enforcement) -->
+<div id="serverRemainingSeconds" th:text="${remainingSeconds}" style="display:none;"></div>
+
+<script>
+    // ---- Countdown Timer (display only; server enforces deadline) ----
+    var remaining = parseInt(document.getElementById('serverRemainingSeconds').textContent, 10);
+    if (isNaN(remaining) || remaining < 0) remaining = 0;
+
+    function formatTime(sec) {
+        var h = Math.floor(sec / 3600);
+        var m = Math.floor((sec % 3600) / 60);
+        var s = sec % 60;
+        if (h > 0) return h + ':' + pad(m) + ':' + pad(s);
+        return pad(m) + ':' + pad(s);
+    }
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function updateTimer() {
+        var display = formatTime(remaining);
+        document.getElementById('timerDisplay').textContent = display;
+        document.getElementById('timerBoxDisplay').textContent = display;
+
+        var box = document.getElementById('timerBox');
+        box.classList.remove('timer-warning','timer-danger');
+        if (remaining <= 60) {
+            box.classList.add('timer-danger');
+        } else if (remaining <= 300) {
+            box.classList.add('timer-warning');
+        }
+
+        if (remaining <= 0) {
+            // Auto-submit – server will ignore answers past deadline anyway
+            document.getElementById('examForm').submit();
+            return;
+        }
+        remaining--;
+        setTimeout(updateTimer, 1000);
+    }
+    updateTimer();
+
+    // ---- Question Navigator ----
+    function markAnswered(radio) {
+        var qNum = radio.getAttribute('data-qnum');
+        var navLink = document.getElementById('qNav' + qNum);
+        if (navLink) navLink.classList.add('answered');
+    }
+
+    // ---- Submit Confirmation ----
+    function confirmSubmit() {
+        if (confirm('Are you sure you want to submit your exam? You cannot change your answers after submission.')) {
+            document.getElementById('examForm').submit();
+        }
+    }
+</script>
+</body>
+</html>

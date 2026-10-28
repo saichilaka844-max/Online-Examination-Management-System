@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Error – Online Exam System</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="container">
+    <h1 th:text="${errorTitle ?: 'Error'}">Error</h1>
+    <p th:text="${errorMessage ?: 'An error occurred.'}">An error occurred.</p>
+    <a th:href="@{/}" class="btn btn-primary">Go Home</a>
+</div>
+</body>
+</html>

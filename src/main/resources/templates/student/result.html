@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Exam Result</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            🎓 Student Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/student/dashboard}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                Dashboard
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>Exam Result: <strong th:text="${attempt.exam.title}"></strong></div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div class="result-banner" th:classappend="${attempt.passed != null and attempt.passed} ? 'pass' : 'fail'">
+                <h2 th:text="${attempt.passed != null and attempt.passed} ? 'PASSED ✓' : 'FAILED ✗'"></h2>
+                <div class="score-display">
+                    Score: <span th:text="${attempt.scoreObtained}"></span> / <span style="font-size: 1.5rem; color: var(--dark);" th:text="${attempt.exam.totalMarks}"></span>
+                </div>
+                <p>Submitted At: <span th:text="${attempt.submittedAt}"></span></p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Answer Review</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table review-table">
+                        <thead>
+                        <tr>
+                            <th>#</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Marks</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="ans, i : ${answers}"
+                            th:class="${ans.correct != null and ans.correct} ? 'row-correct' : 'row-wrong'">
+                            <td th:text="${i.count}"></td>
+                            <td th:text="${ans.question.questionText}"></td>
+                            <td th:text="${ans.selectedAnswer ?: 'Skipped'}"></td>
+                            <td th:text="${ans.question.correctAnswer}"></td>
+                            <td th:text="${ans.marksAwarded}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <a th:href="@{/student/dashboard}" class="btn btn-primary">Back to Dashboard</a>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

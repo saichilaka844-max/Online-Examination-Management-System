@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Exams – Admin</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">⚙️ Admin Portal</div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}" class="active">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>Manage Exams</div>
+            <form th:action="@{/logout}" method="post" style="margin:0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}"   class="alert alert-danger"  th:text="${errorMessage}"></div>
+
+            <div class="card">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                    <h3 style="margin:0;">All Exams</h3>
+                    <a th:href="@{/admin/exams/new}" class="btn btn-primary">+ Create Exam</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="examsTable">
+                        <thead>
+                        <tr>
+                            <th>ID</th><th>Title</th><th>Subject</th><th>Duration</th>
+                            <th>Marks</th><th>Pass%</th><th>Opens</th><th>Closes</th>
+                            <th>Mode</th><th>Published</th><th>Status</th><th>Attempts</th><th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="e, idx : ${exams}">
+                            <td th:text="${e.id}"></td>
+                            <td th:text="${e.title}"></td>
+                            <td><span class="badge badge-info" th:text="${e.subject.name}"></span></td>
+                            <td th:text="${e.durationMinutes} + ' min'"></td>
+                            <td th:text="${e.totalMarks}"></td>
+                            <td th:text="${e.passingPercentage} + '%'"></td>
+                            <td th:text="${e.validFrom != null ? #temporals.format(e.validFrom,'dd MMM yy HH:mm') : '—'}"></td>
+                            <td th:text="${e.validUntil != null ? #temporals.format(e.validUntil,'dd MMM yy HH:mm') : (e.availabilityMode.name() == 'NO_EXPIRY' ? 'No Expiry' : '—')}"></td>
+                            <td th:text="${e.availabilityMode.name() == 'SCHEDULED_PERIOD' ? 'Scheduled' : 'No Expiry'}"></td>
+                            <td>
+                                <span th:class="${e.active ? 'badge badge-success' : 'badge badge-secondary'}"
+                                      th:text="${e.active ? 'Published' : 'Draft'}"></span>
+                            </td>
+                            <td>
+                                <span th:with="st=${examStatuses[idx.index]}" th:switch="${st.name()}">
+                                    <span th:case="'AVAILABLE'"   class="badge badge-success">Available</span>
+                                    <span th:case="'UPCOMING'"    class="badge" style="background:#f59e0b;color:#fff;">Upcoming</span>
+                                    <span th:case="'EXPIRED'"     class="badge badge-danger">Expired</span>
+                                    <span th:case="'CLOSED'"      class="badge badge-danger">Closed</span>
+                                    <span th:case="'UNPUBLISHED'" class="badge badge-secondary">Unpublished</span>
+                                    <span th:case="*"             class="badge badge-secondary" th:text="${st}"></span>
+                                </span>
+                            </td>
+                            <td th:text="${examAttemptCounts[idx.index]}"></td>
+                            <td style="white-space:nowrap;">
+                                <a th:href="@{/admin/exams/{id}/edit(id=${e.id})}" class="btn btn-sm btn-warning">Edit</a>
+                                <a th:href="@{/admin/exams/{id}/results(id=${e.id})}" class="btn btn-sm btn-info">Results</a>
+
+                                <!-- Publish / Unpublish -->
+                                <form th:action="@{/admin/exams/{id}/toggle(id=${e.id})}" method="post" style="display:inline"
+                                      th:data-action="${e.active ? 'Unpublish' : 'Publish'}"
+                                      onsubmit="return confirm(this.getAttribute('data-action') + ' this exam?')">
+                                    <button type="submit" class="btn btn-sm btn-secondary"
+                                            th:text="${e.active ? 'Unpublish' : 'Publish'}"></button>
+                                </form>
+
+                                <!-- Close / Reopen -->
+                                <form th:if="${!e.manuallyClosed}"
+                                      th:action="@{/admin/exams/{id}/close(id=${e.id})}" method="post" style="display:inline"
+                                      onsubmit="return confirm('Manually close this exam? Students cannot start new attempts.')">
+                                    <button type="submit" class="btn btn-sm btn-danger">Close</button>
+                                </form>
+                                <form th:if="${e.manuallyClosed}"
+                                      th:action="@{/admin/exams/{id}/reopen(id=${e.id})}" method="post" style="display:inline"
+                                      onsubmit="return confirm('Reopen this exam?')">
+                                    <button type="submit" class="btn btn-sm btn-secondary">Reopen</button>
+                                </form>
+
+                                <!-- Delete -->
+                                <form th:action="@{/admin/exams/{id}/delete(id=${e.id})}" method="post" style="display:inline"
+                                      onsubmit="return confirm('Permanently delete this exam and all its attempts?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>$(document).ready(function() { $('#examsTable').DataTable(); });</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Exam Results</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            ⚙️ Admin Portal
+        </div>
+        <nav class="sidebar-nav">
+            <a th:href="@{/admin/dashboard}">Dashboard</a>
+            <a th:href="@{/admin/users}">Users</a>
+            <a th:href="@{/admin/subjects}">Subjects</a>
+            <a th:href="@{/admin/questions}">Questions</a>
+            <a th:href="@{/admin/exams}">Exams</a>
+            <a th:href="@{/admin/results}">Student Results</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>Exam Results: <span th:text="${exam.title}"></span></div>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </header>
+
+        <div class="content-area">
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body">
+                    <p style="font-size: 1.1rem; margin: 0;">
+                        <strong>Subject:</strong> <span th:text="${exam.subject != null ? exam.subject.name : 'N/A'}"></span> |
+                        <strong>Total Marks:</strong> <span th:text="${exam.totalMarks}"></span> |
+                        <strong>Passing Percentage:</strong> <span th:text="${exam.passingPercentage}"></span>%
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">Student Attempts</h3>
+                    <a th:href="@{/admin/results(examId=${exam.id})}" class="btn btn-sm btn-primary">Open in All Results Filter</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Student ID</th>
+                            <th>Score</th>
+                            <th>Started At</th>
+                            <th>Submitted At</th>
+                            <th>Result</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="a : ${attempts}">
+                            <td>
+                                <strong th:text="${a.student.studentProfile != null and a.student.studentProfile.fullName != null ? a.student.studentProfile.fullName : a.student.username}"></strong>
+                            </td>
+                            <td th:text="${a.student.studentProfile != null and a.student.studentProfile.studentId != null ? a.student.studentProfile.studentId : 'STD-' + a.student.id}"></td>
+                            <td><strong th:text="${a.scoreObtained} + ' / ' + ${exam.totalMarks}"></strong></td>
+                            <td th:text="${a.startedAt != null ? #temporals.format(a.startedAt, 'yyyy-MM-dd HH:mm') : '—'}"></td>
+                            <td th:text="${a.submittedAt != null ? #temporals.format(a.submittedAt, 'yyyy-MM-dd HH:mm') : 'In Progress'}"></td>
+                            <td>
+                                <span th:if="${a.passed == null}" class="badge badge-warning">In Progress</span>
+                                <span th:if="${a.passed != null and a.passed}" class="badge badge-success">PASSED</span>
+                                <span th:if="${a.passed != null and !a.passed}" class="badge badge-danger">FAILED</span>
+                            </td>
+                            <td><a th:href="@{/admin/results/{id}(id=${a.id})}" class="btn btn-sm btn-info">Details</a></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <a th:href="@{/admin/exams}" class="btn btn-secondary">← Back to Exams</a>
+                <a th:href="@{/admin/results}" class="btn btn-primary">📊 View All Student Results</a>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.table').DataTable();
+    });
+</script>
+</body>
+</html>
